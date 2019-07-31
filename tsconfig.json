@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "preserveConstEnums": false,
+    "strictNullChecks": false,
+    "sourceMap": true,
+    "target": "es6",
+    // "outDir": ".build",
+    "moduleResolution": "node",
+    "module": "commonjs",
+    "lib": [
+      "esnext"
+    ],
+    "rootDir": "./",
+    "forceConsistentCasingInFileNames": true
+  },
+  "exclude": [
+    "node_modules"
+  ]
+}

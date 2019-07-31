@@ -1,0 +1,11 @@
+{
+    "extends": "./nucleus-config/tslint.json",
+    "linterOptions": {
+        "exclude": [
+            "./lib/**",
+            "./lib-services/**",
+            "./serverless-plugin-typescript/**",
+            "**/**.spec.ts"
+        ]
+    }
+}

@@ -1,0 +1,55 @@
+{
+    "Comment": "This state machine tracks if the bind process completes in a specific period of time",
+    "StartAt": "WaitForProcessing",
+    "States": {
+        "WaitForProcessing": {
+            "Type":"Wait",
+            "Seconds": 900,
+            "Next":"UpdatePolicyStatus"
+        },
+        "UpdatePolicyStatus": {
+            "Type":"Task",
+            "Resource": "arn:aws:states:::dynamodb:getItem",
+            "Parameters": {
+                "TableName":"${StateTableName}",
+                "Key": {"uid":{"S.$": "$.uid"}, "workflow":{"S.$": "$.workflow"}}
+            },
+            "ResultPath":"$.dynamo",
+            "Next":"ValidateStatus",
+            "Retry": [
+                {
+                    "ErrorEquals": [ "States.ALL" ],
+                    "IntervalSeconds": 1,
+                    "BackoffRate": 2.0
+                }
+            ]
+        },
+        "ValidateStatus": {
+            "Type":"Choice",
+            "Choices": [
+                {
+                    "Variable": "$.dynamo.Item.status.M.state.S",
+                    "StringEquals":"Complete",
+                    "Next": "End"
+                }
+            ],
+            "Default":"AlertSupportTeam"
+        },
+        "AlertSupportTeam": {
+            "Type":"Task",
+            "Resource":"${AlertSupportTeamLambdaFunction.Arn}",
+            "Next":"WaitForProcessing",
+            "Retry": [
+                {
+                    "ErrorEquals": [ "States.ALL" ],
+                    "IntervalSeconds": 1,
+                    "BackoffRate": 2.0
+                }
+            ]
+        },
+        "End": {
+            "Type":"Pass",
+            "End":true
+        }
+    }
+}

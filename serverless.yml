@@ -1,0 +1,198 @@
+service: ${opt:system-name, 'orchestrator'}-metrics
+
+plugins:
+  - serverless-iam-roles-per-function
+  - serverless-plugin-catdir
+  - serverless-webpack
+
+package:
+  excludeDevDependencies: false
+  exclude:
+    - node_modules/aws-lambda/**
+    - node_modules/serverless-*/**
+    - node_modules/@types/**
+    - node_modules/ts-loader/**
+    - node_modules/typescript/**
+    - node_modules/aws-sdk-mock/**
+    - node_modules/jest/**
+    
+provider:
+  name: aws
+  runtime: nodejs8.10
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'us-west-2'}
+  versionFunctions: false
+  environment:
+    epsagonToken: ${opt:epsagon-token, ''}
+    epsagonAppName: ${opt:epsagon-app-name, ''}
+    epsagonMetadata: ${opt:epsagon-meta, ''}
+    notificationArn:
+      Ref: snsTopicFailure
+    metric: ${opt:failure-metric, 'nucleus'}
+    metricNamespace: 'orchestrator'
+    metricsTable:
+      Ref: dynamodbTableMetrics
+    environment: ${self:provider.stage}
+    WorkflowRegistry: ${self:service}-${self:provider.stage}-workflows
+
+custom:
+  # External file imports
+  webpack:
+    includeModules: true
+    
+  # Default values
+  core:
+    stack: ${opt:core-stack, 'orchestrator'}
+    tables:
+      status:
+        name:
+          Fn::ImportValue: ${self:custom.core.stack}-${self:provider.stage}-status-name
+        arn:
+          Fn::ImportValue: ${self:custom.core.stack}-${self:provider.stage}-status-arn
+        stream:
+          Fn::ImportValue: ${self:custom.core.stack}-${self:provider.stage}-status-stream-arn
+      plugin:
+        name:
+          Fn::ImportValue: ${self:custom.core.stack}-${self:provider.stage}-plugin-name
+        arn:
+          Fn::ImportValue: ${self:custom.core.stack}-${self:provider.stage}-plugin-arn
+
+  WorkflowRegistry:
+    name: ${self:provider.environment.WorkflowRegistry}
+    arn: arn:aws:s3:::${self:provider.environment.WorkflowRegistry}
+
+functions:
+  startValidStateMachine:
+    handler: src/functions/startValidationStateMachine.handler
+    environment:
+      stateMachineArn: 
+        Ref: StepFunction
+    events:
+      - stream:
+          type: dynamodb
+          arn: ${self:custom.core.tables.status.stream}
+    iamRoleStatementsName: ${self:service}-${self:provider.stage}-svsm
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - s3:PutObject
+          - states:StartExecution
+        Resource:
+          - ${self:custom.WorkflowRegistry.arn}
+          - ${self:custom.WorkflowRegistry.arn}/*
+          - Ref: StepFunction
+
+  alertSupportTeam:
+    handler: src/functions/alertSupportTeam.handler
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - sns:publish
+          - dynamodb:PutItem
+          - s3:ListBucket
+        Resource:
+          - Ref: snsTopicFailure
+          - Fn::GetAtt:
+              - dynamodbTableMetrics
+              - Arn
+          - ${self:custom.WorkflowRegistry.arn}
+          - ${self:custom.WorkflowRegistry.arn}/*
+
+  reportMetrics:
+    handler: src/functions/reportMetrics.handler
+    events:
+      - schedule: rate(15 minutes)
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Scan
+          - s3:ListBucket
+        Resource:
+          - ${self:custom.WorkflowRegistry.arn}
+          - ${self:custom.WorkflowRegistry.arn}/*
+          - Fn::GetAtt:
+              - dynamodbTableMetrics
+              - Arn
+      - Effect: Allow
+        Action:
+          - cloudwatch:PutMetricData
+        Resource:
+          - '*'
+
+resources:
+  Resources:
+    snsTopicFailure:
+      Type: AWS::SNS::Topic
+      Properties:
+        DisplayName: 'Policy Issue Failure'
+        TopicName: ${self:service}-${self:provider.stage}-failure
+
+    dynamodbTableMetrics:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: uid
+            AttributeType: S
+          - AttributeName: workflow
+            AttributeType: S
+        KeySchema:
+          - AttributeName: workflow
+            KeyType: HASH
+          - AttributeName: uid
+            KeyType: RANGE
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:service}-${self:provider.stage}-failure-metrics
+        TimeToLiveSpecification:
+          AttributeName: timeout
+          Enabled: true
+
+    s3Workflows:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:provider.environment.WorkflowRegistry}
+        PublicAccessBlockConfiguration: 
+          BlockPublicAcls: true
+          BlockPublicPolicy: true
+          IgnorePublicAcls: true
+          RestrictPublicBuckets: true
+
+    StepFunctionRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument: 
+          Version: "2012-10-17"
+          Statement: 
+            - 
+              Effect: "Allow"
+              Principal: 
+                Service: 
+                  - "states.amazonaws.com"
+              Action: 
+                - "sts:AssumeRole"
+        Policies:
+          - PolicyName: ${self:service}-${self:provider.stage}-CustomDataExtractRole
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement: 
+                - Effect: Allow
+                  Action:
+                    - lambda:InvokeFunction
+                    - dynamodb:GetItem
+                  Resource:
+                    - Fn::GetAtt:
+                        - AlertSupportTeamLambdaFunction
+                        - Arn
+                    - ${self:custom.core.tables.status.arn}
+
+    StepFunction:
+      Type: AWS::StepFunctions::StateMachine
+      Properties:
+        StateMachineName: ${self:service}-${self:provider.stage}
+        RoleArn:
+          Fn::GetAtt:
+            - StepFunctionRole
+            - Arn
+        DefinitionString:
+          Fn::Sub: 
+            - "#catdir(./src/StepFunction.json)"
+            - StateTableName: ${self:custom.core.tables.status.name}
