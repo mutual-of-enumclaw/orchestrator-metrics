@@ -71,7 +71,7 @@ functions:
       - stream:
           type: dynamodb
           arn: ${self:custom.core.tables.status.stream}
-    iamRoleStatementsName: ${self:service}-${self:provider.stage}-svsm
+    iamRoleStatementsName: ${self:service}-${self:provider.stage}-${self:provider.region}-svsm
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -84,6 +84,7 @@ functions:
 
   alertSupportTeam:
     handler: src/functions/alertSupportTeam.handler
+    iamRoleStatementsName: ${self:service}-${self:provider.stage}-${self:provider.region}-ast
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -102,6 +103,7 @@ functions:
     handler: src/functions/reportMetrics.handler
     events:
       - schedule: rate(15 minutes)
+    iamRoleStatementsName: ${self:service}-${self:provider.stage}-${self:provider.region}-rm
     iamRoleStatements:
       - Effect: Allow
         Action:
