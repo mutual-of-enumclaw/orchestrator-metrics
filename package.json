@@ -9,7 +9,7 @@
   "scripts": {
     "prebuild": "npm run lt",
     "build": "npm run package",
-    "postbuild": "mv .serverless/orch-metrics.zip ./",
+    "postbuild": "mv .serverless/orchestrator-metrics.zip ./",
     "test": "npx jest",
     "test:coverage": "npm run test -- --coverage",
     "lint": "npx tslint -c tslint.json -p tsconfig.json",
