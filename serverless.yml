@@ -35,6 +35,8 @@ provider:
     environment: ${self:provider.stage}
     WorkflowRegistry: ${self:service}-${self:provider.stage}-workflows
 
+  stackTags: ${file(./${opt:tagConfig, 'default-tags.yml'})}
+  
 custom:
   # External file imports
   webpack:
