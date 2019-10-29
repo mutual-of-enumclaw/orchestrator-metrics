@@ -19,9 +19,9 @@
     "deploy": "npx sls deploy"
   },
   "dependencies": {
+    "@moe-tech/orchestrator": "^1.0.53",
     "aws-sdk": "^2.502.0",
     "epsagon": "^1.31.6",
-    "@moe-tech/orchestrator": "^1.0.39",
     "source-map-support": "^0.5.12"
   },
   "devDependencies": {
@@ -32,7 +32,7 @@
     "aws-sdk-mock": "^4.4.0",
     "jest": "^24.8.0",
     "jest-junit": "^7.0.0",
-    "serverless": "^1.41.1",
+    "serverless": "^1.55.1",
     "serverless-iam-roles-per-function": "^1.0.2",
     "serverless-plugin-catdir": "^1.0.3",
     "serverless-plugin-tracing": "^2.0.0",
