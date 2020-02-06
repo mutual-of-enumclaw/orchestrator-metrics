@@ -62,4 +62,6 @@ typings/
 
 .serverless
 
+.webpack
+
 /junit.xml
