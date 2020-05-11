@@ -1,0 +1,21 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-version:
+      nodejs: 12
+  pre_build:
+    commands:
+      - npm ci
+      - npm run lt
+      - npm test
+  build:
+    commands:
+      #- NEED THIS? aws s3 cp $S3BuildPath . --recursive
+      - serverless deploy --stage $Stage --verbose --force
+reports:
+  tests:
+    files:
+      - junit.xml
+      - coverage
+    file-format: JunitXml
