@@ -11,7 +11,6 @@ phases:
       - npm test
   build:
     commands:
-      #- NEED THIS? aws s3 cp $S3BuildPath . --recursive
       - serverless deploy --stage $Stage --verbose --force
 reports:
   tests:
