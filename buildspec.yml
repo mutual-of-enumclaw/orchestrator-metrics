@@ -4,17 +4,17 @@ phases:
   install:
     runtime-version:
       nodejs: 12
-  pre_build:
     commands:
       - npm ci
+  pre_build:
+    commands:
       - npm run lt
-      - npm test
+      - npm run test
   build:
     commands:
-      - serverless deploy --stage $Stage --verbose --force
-reports:
-  tests:
-    files:
-      - junit.xml
-      - coverage
-    file-format: JunitXml
+      - |
+        if [ "$Validate" = "true" ]; then
+          npm publish --dry-run  || { echo 'publish failed'; exit 1; }
+        else
+          npm run buildPublish || { echo 'publish failed'; exit 1; }
+        fi
