@@ -12,6 +12,7 @@ phases:
       - npm run test
   build:
     commands:
+      - aws s3 cp $S3HomePath ~ --recursive
       - |
         if [ "$Validate" = "true" ]; then
           npm publish --dry-run  || { echo 'publish failed'; exit 1; }
