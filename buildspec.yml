@@ -16,5 +16,5 @@ phases:
         if [ "$Validate" = "true" ]; then
           npm publish --dry-run  || { echo 'publish failed'; exit 1; }
         else
-          npm run buildPublish || { echo 'publish failed'; exit 1; }
+          npm publish || { echo 'publish failed'; exit 1; }
         fi
