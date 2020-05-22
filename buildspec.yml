@@ -1,0 +1,20 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-version:
+      nodejs: 12
+    commands:
+      - npm ci
+  pre_build:
+    commands:
+      - npm run lt
+      - npm run test
+  build:
+    commands:
+      - |
+        if [ "$Validate" = "true" ]; then
+          npm publish --dry-run  || { echo 'publish failed'; exit 1; }
+        else
+          npm run buildPublish || { echo 'publish failed'; exit 1; }
+        fi
