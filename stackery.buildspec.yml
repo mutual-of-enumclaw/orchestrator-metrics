@@ -1,0 +1,14 @@
+stages:
+ setup:
+  - stackery deploy-stage setup
+ build:
+  - stackery deploy-stage build
+ addIntegrations:
+  - stackery deploy-stage add-integrations
+  - stackery deploy-stage add-environment-context
+ package:
+  - stackery deploy-stage package
+ submitChangeSet:
+  - stackery deploy-stage submit-change-set
+ executeChangeSet:
+  - serverless deploy --stage
