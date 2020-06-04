@@ -1,6 +1,7 @@
 stages:
  setup:
   - stackery deploy-stage setup
+  - npm install
  build:
   - stackery deploy-stage build
  addIntegrations:
