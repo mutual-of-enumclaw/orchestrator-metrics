@@ -1,4 +1,4 @@
-service: ${opt:system-name, 'orchestrator'}-metrics
+service: nucleus-orch-metrics
 
 plugins:
   - serverless-iam-roles-per-function
