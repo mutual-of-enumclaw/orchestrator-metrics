@@ -3,9 +3,7 @@ stages:
   - stackery deploy-stage setup
   - npm install
  build:
-  - deploymentBucket=$(./stackery env parameters get -e $ENVIRONMENT_NAME "deploy-bucket")
-  - orchPrefix=$(./stackery env parameters get -e $ENVIRONMENT_NAME "orchestrator.prefix")
-  - stackery deploy-stage build --system-name "$orchPrefix" --deploymentBucket $deploymentBucket
+  - stackery deploy-stage build
  addIntegrations:
   - stackery deploy-stage add-integrations
   - stackery deploy-stage add-environment-context
