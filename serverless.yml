@@ -4,6 +4,7 @@ plugins:
   - serverless-iam-roles-per-function
   - serverless-plugin-catdir
   - serverless-webpack
+  - serverless-plugin-generic-stack
 
 package:
   excludeDevDependencies: false

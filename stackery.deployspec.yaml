@@ -13,3 +13,4 @@ stages:
   - stackery deploy-stage submit-change-set
  executeChangeSet:
   - serverless deploy --stage
+  
