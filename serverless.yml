@@ -162,8 +162,8 @@ resources:
       Type: AWS::SSM::Parameter::Value<String>
       Default: /<EnvironmentName>/orchestrator/base
     Environment:
-      Type: String
-      Default: <EnvironmentName>
+      Type: AWS::SSM::Parameter::Value<String>
+      Default: /<EnvironmentName>/name
     FailureMetric:
       Type: AWS::SSM::Parameter::Value<String>
       Default: /<EnvironmentName>/orchestrator/metric
