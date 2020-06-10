@@ -22,6 +22,7 @@
     "@moe-tech/orchestrator": "^1.0.53",
     "aws-sdk": "^2.693.0",
     "epsagon": "^1.51.0",
+    "serverless-pseudo-parameters": "^2.5.0",
     "source-map-support": "^0.5.16"
   },
   "devDependencies": {

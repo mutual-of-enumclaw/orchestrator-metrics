@@ -5,6 +5,7 @@ plugins:
   - serverless-plugin-catdir
   - serverless-webpack
   - serverless-plugin-generic-stack
+  - serverless-pseudo-parameters
 
 package:
   excludeDevDependencies: false
@@ -23,21 +24,40 @@ provider:
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'us-west-2'}
   versionFunctions: false
+  stackParameters:
+    - ParameterKey: OrchestratorBaseStack
+      ParameterValue: orchestrator
+    - ParameterKey: Environment
+      ParameterValue: ${self:provider.stage}
+    - ParameterKey: FailureMetric
+      ParameterValue: ${opt:failure-metric, 'nucleus'}
+    - ParameterKey: EpsagonToken
+      ParameterValue: ${opt:epsagon-token, ''}
+    - ParameterKey: EpsagonStackName
+      ParameterValue: ${opt:epsagon-app-name, ''}
+    - ParameterKey: EpsagonMetadata
+      ParameterValue: ${opt:epsagon-meta, ''}
   environment:
-    epsagonToken: ${opt:epsagon-token, ''}
-    epsagonAppName: ${opt:epsagon-app-name, ''}
-    epsagonMetadata: ${opt:epsagon-meta, ''}
+    epsagonToken:
+      Ref: EpsagonToken
+    epsagonAppName:
+      Ref: EpsagonStackName
+    epsagonMetadata:
+      Ref: EpsagonMetadata
     notificationArn:
       Ref: snsTopicFailure
-    metric: ${opt:failure-metric, 'nucleus'}
-    metricNamespace: 'orchestrator'
+    metric:
+      Ref: FailureMetric
+    metricNamespace:
+      Ref: "AWS::StackName"
     metricsTable:
       Ref: dynamodbTableMetrics
-    environment: ${self:provider.stage}
-    WorkflowRegistry: ${self:service}-${self:provider.stage}-workflows
+    environment:
+      Ref: Environment
+    WorkflowRegistry: ${self:custom.WorkflowRegistry.name} 
 
   stackTags: ${file(./${opt:tagConfig, 'default-tags.yml'})}
-  deploymentBucket: ${opt:deploymentBucket, ''}
+  deploymentBucket: ${opt:deploymentBucket, ${opt:config, ''}}
 
 custom:
   # External file imports
@@ -46,24 +66,26 @@ custom:
     
   # Default values
   core:
-    stack: ${opt:core-stack, 'orchestrator'}
+    stack: "#{OrchestratorBaseStack}"
     tables:
       status:
         name:
-          Fn::ImportValue: ${self:custom.core.stack}-${self:provider.stage}-status-name
+          Fn::ImportValue: "#{OrchestratorBaseStack}-#{Environment}-status-name"
         arn:
-          Fn::ImportValue: ${self:custom.core.stack}-${self:provider.stage}-status-arn
+          Fn::ImportValue: "#{OrchestratorBaseStack}-#{Environment}-status-arn"
         stream:
-          Fn::ImportValue: ${self:custom.core.stack}-${self:provider.stage}-status-stream-arn
+          Fn::ImportValue: "#{OrchestratorBaseStack}-#{Environment}-status-stream-arn"
       plugin:
         name:
-          Fn::ImportValue: ${self:custom.core.stack}-${self:provider.stage}-plugin-name
+          Fn::ImportValue: "#{OrchestratorBaseStack}-#{Environment}-plugin-name"
         arn:
-          Fn::ImportValue: ${self:custom.core.stack}-${self:provider.stage}-plugin-arn
+          Fn::ImportValue: "#{OrchestratorBaseStack}-#{Environment}-plugin-arn"
 
   WorkflowRegistry:
-    name: ${self:provider.environment.WorkflowRegistry}
-    arn: arn:aws:s3:::${self:provider.environment.WorkflowRegistry}
+    name: 
+      Fn::Sub: "#{AWS::StackName}-workflows"
+    arn:
+      Fn::Sub: "arn:aws:s3:::#{AWS::StackName}-workflows"
 
 functions:
   startValidStateMachine:
@@ -75,7 +97,7 @@ functions:
       - stream:
           type: dynamodb
           arn: ${self:custom.core.tables.status.stream}
-    iamRoleStatementsName: ${self:service}-${self:provider.stage}-${self:provider.region}-svsm
+    iamRoleStatementsName: "#{AWS::StackName}-#{AWS::Region}-svsm"
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -83,12 +105,15 @@ functions:
           - states:StartExecution
         Resource:
           - ${self:custom.WorkflowRegistry.arn}
-          - ${self:custom.WorkflowRegistry.arn}/*
+          - Fn::Join:
+              - ""
+              - - ${self:custom.WorkflowRegistry.arn}
+                - /*
           - Ref: StepFunction
 
   alertSupportTeam:
     handler: src/functions/alertSupportTeam.handler
-    iamRoleStatementsName: ${self:service}-${self:provider.stage}-${self:provider.region}-ast
+    iamRoleStatementsName: "#{AWS::StackName}-#{AWS::Region}-ast"
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -101,13 +126,16 @@ functions:
               - dynamodbTableMetrics
               - Arn
           - ${self:custom.WorkflowRegistry.arn}
-          - ${self:custom.WorkflowRegistry.arn}/*
+          - Fn::Join:
+              - ""
+              - - ${self:custom.WorkflowRegistry.arn}
+                - /*
 
   reportMetrics:
     handler: src/functions/reportMetrics.handler
     events:
       - schedule: rate(15 minutes)
-    iamRoleStatementsName: ${self:service}-${self:provider.stage}-${self:provider.region}-rm
+    iamRoleStatementsName: "#{AWS::StackName}-#{AWS::Region}-rm"
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -115,7 +143,10 @@ functions:
           - s3:ListBucket
         Resource:
           - ${self:custom.WorkflowRegistry.arn}
-          - ${self:custom.WorkflowRegistry.arn}/*
+          - Fn::Join:
+              - ""
+              - - ${self:custom.WorkflowRegistry.arn}
+                - /*
           - Fn::GetAtt:
               - dynamodbTableMetrics
               - Arn
@@ -126,12 +157,31 @@ functions:
           - '*'
 
 resources:
+  Parameters:
+    OrchestratorBaseStack:
+      Type: AWS::SSM::Parameter::Value<String>
+      Default: /<EnvironmentName>/orchestrator/base
+    Environment:
+      Type: String
+      Default: <EnvironmentName>
+    FailureMetric:
+      Type: AWS::SSM::Parameter::Value<String>
+      Default: /<EnvironmentName>/orchestrator/metric
+    EpsagonToken:
+      Type: AWS::SSM::Parameter::Value<String>
+      Default: /<EnvironmentName>/epsagon/token
+    EpsagonStackName:
+      Type: AWS::SSM::Parameter::Value<String>
+      Default: /<EnvironmentName>/epsagon/app-name
+    EpsagonMetadata:
+      Type: AWS::SSM::Parameter::Value<String>
+      Default: /<EnvironmentName>/epsagon/app-name
   Resources:
     snsTopicFailure:
       Type: AWS::SNS::Topic
       Properties:
         DisplayName: 'Policy Issue Failure'
-        TopicName: ${self:service}-${self:provider.stage}-failure
+        TopicName: "#{AWS::StackName}-failure"
 
     dynamodbTableMetrics:
       Type: AWS::DynamoDB::Table
@@ -147,7 +197,7 @@ resources:
           - AttributeName: uid
             KeyType: RANGE
         BillingMode: PAY_PER_REQUEST
-        TableName: ${self:service}-${self:provider.stage}-failure-metrics
+        TableName: "#{AWS::StackName}-failure-metrics"
         TimeToLiveSpecification:
           AttributeName: timeout
           Enabled: true
@@ -176,7 +226,7 @@ resources:
               Action: 
                 - "sts:AssumeRole"
         Policies:
-          - PolicyName: ${self:service}-${self:provider.stage}-CustomDataExtractRole
+          - PolicyName: "#{AWS::StackName}-CustomDataExtractRole"
             PolicyDocument:
               Version: "2012-10-17"
               Statement: 
@@ -193,7 +243,8 @@ resources:
     StepFunction:
       Type: AWS::StepFunctions::StateMachine
       Properties:
-        StateMachineName: ${self:service}-${self:provider.stage}
+        StateMachineName:
+          Ref: "AWS::StackName"
         RoleArn:
           Fn::GetAtt:
             - StepFunctionRole
