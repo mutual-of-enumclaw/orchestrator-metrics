@@ -57,7 +57,7 @@ provider:
     WorkflowRegistry: ${self:custom.WorkflowRegistry.name} 
 
   stackTags: ${file(./${opt:tagConfig, 'default-tags.yml'})}
-  deploymentBucket: ${opt:deploymentBucket, ${opt:config, ''}}
+  deploymentBucket: ${opt:deploymentBucket, '${opt:config, ''}'}
 
 custom:
   # External file imports
