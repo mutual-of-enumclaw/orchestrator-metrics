@@ -176,6 +176,7 @@ resources:
     EpsagonMetadata:
       Type: AWS::SSM::Parameter::Value<String>
       Default: /<EnvironmentName>/epsagon/app-name
+      
   Resources:
     snsTopicFailure:
       Type: AWS::SNS::Topic
