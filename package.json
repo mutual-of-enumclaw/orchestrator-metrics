@@ -20,8 +20,9 @@
   },
   "dependencies": {
     "@moe-tech/orchestrator": "^1.0.53",
-    "aws-sdk": "^2.612.0",
-    "epsagon": "^1.51.0",
+    "aws-sdk": "^2.702.0",
+    "epsagon": "^1.73.2",
+    "serverless-pseudo-parameters": "^2.5.0",
     "source-map-support": "^0.5.16"
   },
   "devDependencies": {
@@ -32,9 +33,10 @@
     "aws-sdk-mock": "^4.5.0",
     "jest": "^24.9.0",
     "jest-junit": "^7.0.0",
-    "serverless": "^1.55.1",
+    "serverless": "^1.73.1",
     "serverless-iam-roles-per-function": "^1.0.2",
-    "serverless-plugin-catdir": "^1.0.3",
+    "serverless-plugin-catdir": "^1.0.4",
+    "serverless-plugin-generic-stack": "git+https://github.com/mutual-of-enumclaw/serverless-plugin-generic-stack.git",
     "serverless-plugin-tracing": "^2.0.0",
     "serverless-webpack": "^5.3.1",
     "ts-jest": "^24.3.0",

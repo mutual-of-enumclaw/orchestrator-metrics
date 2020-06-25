@@ -63,5 +63,6 @@ typings/
 .serverless
 
 .webpack
+.stackery
 
 /junit.xml
