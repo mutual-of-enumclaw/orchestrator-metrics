@@ -70,16 +70,16 @@ custom:
     tables:
       status:
         name:
-          Fn::ImportValue: "#{OrchestratorBaseStack}-#{Environment}-status-name"
+          Fn::ImportValue: "#{OrchestratorBaseStack}-status-name"
         arn:
-          Fn::ImportValue: "#{OrchestratorBaseStack}-#{Environment}-status-arn"
+          Fn::ImportValue: "#{OrchestratorBaseStack}-status-arn"
         stream:
-          Fn::ImportValue: "#{OrchestratorBaseStack}-#{Environment}-status-stream-arn"
+          Fn::ImportValue: "#{OrchestratorBaseStack}-status-stream-arn"
       plugin:
         name:
-          Fn::ImportValue: "#{OrchestratorBaseStack}-#{Environment}-plugin-name"
+          Fn::ImportValue: "#{OrchestratorBaseStack}-plugin-name"
         arn:
-          Fn::ImportValue: "#{OrchestratorBaseStack}-#{Environment}-plugin-arn"
+          Fn::ImportValue: "#{OrchestratorBaseStack}-plugin-arn"
 
   WorkflowRegistry:
     name: 
