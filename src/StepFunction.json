@@ -20,7 +20,8 @@
                 {
                     "ErrorEquals": [ "States.ALL" ],
                     "IntervalSeconds": 1,
-                    "BackoffRate": 2.0
+                    "BackoffRate": 2.0,
+                    "MaxAttempts": 100
                 }
             ]
         },
@@ -43,7 +44,8 @@
                 {
                     "ErrorEquals": [ "States.ALL" ],
                     "IntervalSeconds": 1,
-                    "BackoffRate": 2.0
+                    "BackoffRate": 2.0,
+                    "MaxAttempts": 100
                 }
             ]
         },
