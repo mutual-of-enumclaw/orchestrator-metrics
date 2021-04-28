@@ -120,7 +120,7 @@ export class MockS3 {
         return {
             promise: () => {
                 return new Promise((resolve) => {
-                    resolve();
+                    resolve(undefined);
                 });
             }
         };

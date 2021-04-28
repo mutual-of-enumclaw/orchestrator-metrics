@@ -182,6 +182,9 @@ resources:
     EpsagonMetadata:
       Type: ${self:custom.ParameterTypes.current}
       Default: /<EnvironmentName>/epsagon/app-name
+    S3ReplicationArn:
+      Type: AWS::SSM::Parameter::Value<String>
+      Default: /${self:provider.stage}/nucleus/core/customResources/s3Replication
       
   Resources:
     snsTopicFailure:
@@ -218,6 +221,26 @@ resources:
           BlockPublicPolicy: true
           IgnorePublicAcls: true
           RestrictPublicBuckets: true
+    WorkflowsBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: "#{AWS::StackName}-#{AWS::Region}-workflows"
+        PublicAccessBlockConfiguration: 
+          BlockPublicAcls: true
+          BlockPublicPolicy: true
+          IgnorePublicAcls: true
+          RestrictPublicBuckets: true
+    RunImportBucketReplication:
+      Type: Custom::BucketReplication
+      Properties:
+        ServiceToken:
+          Ref: S3ReplicationArn
+        Bucket1Name:
+          Ref: WorkflowsBucket
+        Bucket2Name:
+          Ref: s3Workflows
+        AccountId:
+          Ref: AWS::AccountId
 
     StepFunctionRole:
       Type: AWS::IAM::Role

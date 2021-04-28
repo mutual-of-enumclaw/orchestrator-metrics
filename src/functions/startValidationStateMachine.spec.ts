@@ -13,7 +13,7 @@ class MockStepFunction {
         return {
             promise: () => {
                 return new Promise((resolve, reject) => {
-                    resolve();
+                    resolve(undefined);
                 });
             }
         };
@@ -59,27 +59,27 @@ describe('handler', () => {
     test('Records null', async () => {
         mockStepFunction.reset();
         mockRegister.reset();
-        await statMachine.handler({ Records: null}, null, null);
+        await statMachine.handler({ Records: null }, null, null);
         expect(mockStepFunction.called).toBe(0);
         expect(mockRegister.registerInput).toBe(null);
     });
     test('Records empty', async () => {
         mockStepFunction.reset();
         mockRegister.reset();
-        await statMachine.handler({ Records: []}, null, null);
+        await statMachine.handler({ Records: [] }, null, null);
         expect(mockStepFunction.called).toBe(0);
         expect(mockRegister.registerInput).toBe(null);
     });
     test('dynamodb not set', async () => {
         mockStepFunction.reset();
         mockRegister.reset();
-        await statMachine.handler({ Records: [{}]}, null, null);
+        await statMachine.handler({ Records: [{}] }, null, null);
         expect(mockStepFunction.called).toBe(0);
         expect(mockRegister.registerInput).toBe(null);
     });
     test('NewImage not set', async () => {
         mockStepFunction.reset();
-        await statMachine.handler({ Records: [{dynamodb:{}}]}, null, null);
+        await statMachine.handler({ Records: [{ dynamodb: {} }] }, null, null);
         expect(mockStepFunction.called).toBe(0);
         expect(mockRegister.registerInput).toBe(null);
     });
@@ -121,19 +121,19 @@ describe('handler', () => {
     });
 });
 
-function createDefaultDynamoEvent() : DynamoDBStreamEvent {
+function createDefaultDynamoEvent(): DynamoDBStreamEvent {
     const retval: DynamoDBStreamEvent = {
         Records: [
             {
                 dynamodb: {
                     NewImage: {
-                        uid: { S: 'uid'},
-                        workflow: { S: 'workflow'}
+                        uid: { S: 'uid' },
+                        workflow: { S: 'workflow' }
                     },
                     OldImage: null
                 }
             }
-        ]   
+        ]
     } as any;
 
     return retval;
@@ -146,7 +146,7 @@ describe('unit test utils', () => {
         let error = null;
         try {
             statMachine.setStepFunctionObject(null);
-        } catch(err) {
+        } catch (err) {
             error = err.message;
         }
         expect(error).toBe('A system is trying to use a unit test capability');
@@ -156,7 +156,7 @@ describe('unit test utils', () => {
         let error = null;
         try {
             statMachine.setStepFunctionObject(null);
-        } catch(err) {
+        } catch (err) {
             error = err.message;
         }
         expect(error).toBe('A system is trying to use a unit test capability');
