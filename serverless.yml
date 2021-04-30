@@ -17,7 +17,7 @@ package:
     - node_modules/typescript/**
     - node_modules/aws-sdk-mock/**
     - node_modules/jest/**
-    
+
 provider:
   name: aws
   runtime: nodejs10.x
@@ -54,7 +54,7 @@ provider:
       Ref: dynamodbTableMetrics
     environment:
       Ref: Environment
-    WorkflowRegistry: ${self:custom.WorkflowRegistry.name} 
+    WorkflowRegistry: ${self:custom.WorkflowRegistry.name}
 
   stackTags: ${file(./${opt:tagConfig, 'default-tags.yml'})}
   deploymentBucket: ${opt:deploymentBucket, '${opt:config, ''}'}
@@ -63,7 +63,7 @@ custom:
   # External file imports
   webpack:
     includeModules: true
-    
+
   # Default values
   core:
     stack: "#{OrchestratorBaseStack}"
@@ -82,14 +82,14 @@ custom:
           Fn::ImportValue: "#{OrchestratorBaseStack}-plugin-arn"
 
   WorkflowRegistry:
-    name: 
+    name:
       Fn::Sub: "#{AWS::StackName}-workflows"
     arn:
       Fn::Sub: "arn:aws:s3:::#{AWS::StackName}-workflows"
 
   ParameterTypes:
     current: ${self:custom.ParameterTypes.${opt:config, 'default'}}
-    serverless: 
+    serverless:
       yml: AWS::SSM::Parameter::Value<String>
     default: String
 
@@ -97,7 +97,7 @@ functions:
   startValidStateMachine:
     handler: src/functions/startValidationStateMachine.handler
     environment:
-      stateMachineArn: 
+      stateMachineArn:
         Ref: StepFunction
     events:
       - stream:
@@ -160,7 +160,7 @@ functions:
         Action:
           - cloudwatch:PutMetricData
         Resource:
-          - '*'
+          - "*"
 
 resources:
   Parameters:
@@ -185,16 +185,42 @@ resources:
     S3ReplicationArn:
       Type: AWS::SSM::Parameter::Value<String>
       Default: /${self:provider.stage}/nucleus/core/customResources/s3Replication
-      
+    DdbGlobalTableArn:
+      Type: AWS::SSM::Parameter::Value<String>
+      Default: /${self:provider.stage}/nucleus/core/customResources/ddbGlobalTable
+    DeployedRegions:
+      Type: AWS::SSM::Parameter::Value<String>
+      Default: /${self:provider.stage}/nucleus/deployedRegions
+
+  Conditions:
+    IsSecondaryRegion:
+      Fn::Not:
+        - Fn::Equals:
+            - Fn::Select:
+                - 0
+                - Fn::Split:
+                    - ","
+                    - Ref: DeployedRegions
+            - Ref: AWS::Region
+    IsPrimaryRegion:
+      Fn::Equals:
+        - Fn::Select:
+            - 0
+            - Fn::Split:
+                - ","
+                - Ref: DeployedRegions
+        - Ref: AWS::Region
+
   Resources:
     snsTopicFailure:
       Type: AWS::SNS::Topic
       Properties:
-        DisplayName: 'Policy Issue Failure'
+        DisplayName: "Policy Issue Failure"
         TopicName: "#{AWS::StackName}-failure"
 
     dynamodbTableMetrics:
       Type: AWS::DynamoDB::Table
+      Condition: IsPrimaryRegion
       Properties:
         AttributeDefinitions:
           - AttributeName: uid
@@ -211,12 +237,19 @@ resources:
         TimeToLiveSpecification:
           AttributeName: timeout
           Enabled: true
+    RunMetricsDdbGlobalTables:
+      Type: Custom::GlobalTable
+      Condition: IsSecondaryRegion
+      Properties:
+        ServiceToken:
+          Ref: DdbGlobalTableArn
+        TableName: "#{AWS::StackName}-failure-metrics"
 
     s3Workflows:
       Type: AWS::S3::Bucket
       Properties:
         BucketName: ${self:provider.environment.WorkflowRegistry}
-        PublicAccessBlockConfiguration: 
+        PublicAccessBlockConfiguration:
           BlockPublicAcls: true
           BlockPublicPolicy: true
           IgnorePublicAcls: true
@@ -225,7 +258,7 @@ resources:
       Type: AWS::S3::Bucket
       Properties:
         BucketName: "#{AWS::StackName}-#{AWS::Region}-workflows"
-        PublicAccessBlockConfiguration: 
+        PublicAccessBlockConfiguration:
           BlockPublicAcls: true
           BlockPublicPolicy: true
           IgnorePublicAcls: true
@@ -245,21 +278,20 @@ resources:
     StepFunctionRole:
       Type: AWS::IAM::Role
       Properties:
-        AssumeRolePolicyDocument: 
+        AssumeRolePolicyDocument:
           Version: "2012-10-17"
-          Statement: 
-            - 
-              Effect: "Allow"
-              Principal: 
-                Service: 
+          Statement:
+            - Effect: "Allow"
+              Principal:
+                Service:
                   - "states.amazonaws.com"
-              Action: 
+              Action:
                 - "sts:AssumeRole"
         Policies:
           - PolicyName: "#{AWS::StackName}-CustomDataExtractRole"
             PolicyDocument:
               Version: "2012-10-17"
-              Statement: 
+              Statement:
                 - Effect: Allow
                   Action:
                     - lambda:InvokeFunction
@@ -280,6 +312,6 @@ resources:
             - StepFunctionRole
             - Arn
         DefinitionString:
-          Fn::Sub: 
+          Fn::Sub:
             - "#catdir(./src/StepFunction.json)"
             - StateTableName: ${self:custom.core.tables.status.name}
