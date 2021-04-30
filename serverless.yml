@@ -237,7 +237,7 @@ resources:
         TimeToLiveSpecification:
           AttributeName: timeout
           Enabled: true
-    RunManglerDdbGlobalTables:
+    RunMetricsDdbGlobalTables:
       Type: Custom::GlobalTable
       Condition: IsSecondaryRegion
       Properties:
