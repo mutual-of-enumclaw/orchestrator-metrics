@@ -128,9 +128,14 @@ functions:
           - s3:ListBucket
         Resource:
           - Ref: snsTopicFailure
-          - Fn::GetAtt:
-              - dynamodbTableMetrics
-              - Arn
+          - Fn::If:
+              - IsPrimaryRegion
+              - Fn::GetAtt:
+                  - dynamodbTableMetrics
+                  - Arn
+              - Fn::GetAtt:
+                  - RunMetricsDdbGlobalTables
+                  - Arn
           - ${self:custom.WorkflowRegistry.arn}
           - Fn::Join:
               - ""
@@ -153,9 +158,14 @@ functions:
               - ""
               - - ${self:custom.WorkflowRegistry.arn}
                 - /*
-          - Fn::GetAtt:
-              - dynamodbTableMetrics
-              - Arn
+          - Fn::If:
+              - IsPrimaryRegion
+              - Fn::GetAtt:
+                  - dynamodbTableMetrics
+                  - Arn
+              - Fn::GetAtt:
+                  - RunMetricsDdbGlobalTables
+                  - Arn
       - Effect: Allow
         Action:
           - cloudwatch:PutMetricData
@@ -237,6 +247,7 @@ resources:
         TimeToLiveSpecification:
           AttributeName: timeout
           Enabled: true
+
     RunMetricsDdbGlobalTables:
       Type: Custom::GlobalTable
       Condition: IsSecondaryRegion
