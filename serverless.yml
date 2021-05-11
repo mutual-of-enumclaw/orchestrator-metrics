@@ -135,7 +135,7 @@ functions:
                   - Arn
               - Fn::GetAtt:
                   - RunMetricsDdbGlobalTables
-                  - Arn
+                  - TableArn
           - ${self:custom.WorkflowRegistry.arn}
           - Fn::Join:
               - ""
@@ -165,7 +165,7 @@ functions:
                   - Arn
               - Fn::GetAtt:
                   - RunMetricsDdbGlobalTables
-                  - Arn
+                  - TableArn
       - Effect: Allow
         Action:
           - cloudwatch:PutMetricData
